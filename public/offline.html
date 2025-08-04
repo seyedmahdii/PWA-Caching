@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Offline - PWA Demo</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        margin: 0;
+        padding: 20px;
+        background: #f5f5f5;
+        color: #333;
+      }
+      .container {
+        max-width: 600px;
+        margin: 50px auto;
+        background: white;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+      .icon {
+        font-size: 48px;
+        margin-bottom: 20px;
+      }
+      h1 {
+        color: #e74c3c;
+        margin-bottom: 20px;
+      }
+      p {
+        line-height: 1.6;
+        margin-bottom: 20px;
+      }
+      .back-btn {
+        background: #3498db;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        margin-top: 20px;
+      }
+      .back-btn:hover {
+        background: #2980b9;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="icon">📶</div>
+      <h1>You're Offline</h1>
+      <p>
+        This page isn't available offline. Please check your internet connection
+        and try again.
+      </p>
+      <p>
+        You can still navigate to pages that were previously visited while
+        online.
+      </p>
+      <a href="/" class="back-btn">Go to Home</a>
+    </div>
+  </body>
+</html>
