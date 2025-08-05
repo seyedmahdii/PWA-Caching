@@ -156,4 +156,100 @@ async function handleNavigationRequest(request) {
 
 self.addEventListener("sync", (event) => {
   console.log("Background sync triggered:", event.tag);
+
+  if (event.tag === "sync-cart") {
+    event.waitUntil(syncCartActions());
+  }
 });
+
+async function syncCartActions() {
+  console.log("Performing cart background sync...");
+
+  try {
+    const pendingActions = await getPendingActions();
+
+    if (pendingActions.length === 0) {
+      console.log("No pending cart actions to sync");
+      return;
+    }
+
+    console.log(`Syncing ${pendingActions.length} pending cart actions...`);
+
+    for (const action of pendingActions) {
+      try {
+        if (action.action === "add") {
+          const response = await fetch("/api/cart/add", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              productId: action.productId,
+              productName: action.productName,
+            }),
+          });
+
+          if (response.ok) {
+            await removePendingAction(action.timestamp);
+            console.log(
+              `Successfully synced cart action for ${action.productName}`
+            );
+          } else {
+            console.error(
+              `Failed to sync cart action for ${action.productName}:`,
+              response.status
+            );
+          }
+        }
+      } catch (error) {
+        console.error(
+          `Error syncing cart action for ${action.productName}:`,
+          error
+        );
+      }
+    }
+
+    console.log("Cart background sync completed");
+  } catch (error) {
+    console.error("Background sync failed:", error);
+  }
+}
+
+async function getPendingActions() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("CartSyncDB", 1);
+
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const db = request.result;
+      const transaction = db.transaction(["pendingActions"], "readonly");
+      const store = transaction.objectStore("pendingActions");
+      const getAllRequest = store.getAll();
+
+      getAllRequest.onsuccess = () => resolve(getAllRequest.result);
+      getAllRequest.onerror = () => reject(getAllRequest.error);
+    };
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains("pendingActions")) {
+        db.createObjectStore("pendingActions", { keyPath: "timestamp" });
+      }
+    };
+  });
+}
+
+async function removePendingAction(timestamp) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("CartSyncDB", 1);
+
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const db = request.result;
+      const transaction = db.transaction(["pendingActions"], "readwrite");
+      const store = transaction.objectStore("pendingActions");
+      const deleteRequest = store.delete(timestamp);
+
+      deleteRequest.onsuccess = () => resolve();
+      deleteRequest.onerror = () => reject(deleteRequest.error);
+    };
+  });
+}

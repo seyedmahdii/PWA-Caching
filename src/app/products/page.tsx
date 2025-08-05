@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import styles from "../page.module.css";
 import Toast from "../../components/Toast";
+import { addToCart, processPendingActionsDirectly } from "../../utils/cartSync";
 
 interface Product {
   id: string;
@@ -58,9 +59,23 @@ export default function Products() {
   };
 
   const handleAddToCart = async (product: Product) => {
-    showToast(`Added ${product.name} to cart`, "success");
+    const isOnline = navigator.onLine;
 
     try {
+      const success = await addToCart(product.id, product.name);
+
+      if (success) {
+        if (isOnline) {
+          showToast(`${product.name} added to cart!`, "success");
+        } else {
+          showToast(
+            `${product.name} added to cart (will sync when online)`,
+            "info"
+          );
+        }
+      } else {
+        showToast("Failed to add to cart", "error");
+      }
     } catch (error) {
       console.error("Add to cart error:", error);
       showToast("Failed to add to cart", "error");
@@ -172,6 +187,21 @@ export default function Products() {
             <p className={styles.timestamp}>
               Last Updated: {content?.timestamp}
             </p>
+
+            <button
+              onClick={processPendingActionsDirectly}
+              style={{
+                background: "#10b981",
+                color: "white",
+                border: "none",
+                padding: "0.5rem 1rem",
+                borderRadius: "6px",
+                cursor: "pointer",
+                marginTop: "0.5rem",
+              }}
+            >
+              Manual Sync
+            </button>
           </div>
         </>
       )}
