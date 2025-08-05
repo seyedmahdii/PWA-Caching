@@ -10,6 +10,7 @@ const APP_SHELL_FILES = [
   "/offline.html",
 ];
 const STATIC_CACHE = "static-cache-v1";
+const DYNAMIC_CACHE = "dynamic-cache-v1";
 
 self.addEventListener("install", (event) => {
   console.log("Service Worker installing...");
@@ -40,7 +41,9 @@ self.addEventListener("activate", (event) => {
           cacheNames
             .filter(
               (cacheName) =>
-                cacheName !== APP_SHELL_CACHE && cacheName !== STATIC_CACHE
+                cacheName !== APP_SHELL_CACHE &&
+                cacheName !== STATIC_CACHE &&
+                cacheName !== DYNAMIC_CACHE
             )
             .map((cacheName) => {
               return caches.delete(cacheName);
@@ -68,6 +71,10 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(handleStaticAssetRequest(request));
   }
 
+  if (url.pathname.startsWith("/api/")) {
+    event.respondWith(handleApiRequest(request));
+  }
+
   if (request.mode === "navigate") {
     event.respondWith(handleNavigationRequest(request));
   }
@@ -93,6 +100,32 @@ async function handleStaticAssetRequest(request) {
   } catch (error) {
     console.error("Failed to fetch static asset:", error);
     return new Response("Offline: static asset not available", {
+      status: 503,
+    });
+  }
+}
+
+async function handleApiRequest(request) {
+  console.log("Handling api request", request.url);
+
+  try {
+    const networkResponse = await fetch(request);
+    if (networkResponse.ok) {
+      const cache = await caches.open(DYNAMIC_CACHE);
+      cache.put(request, networkResponse.clone());
+      console.log("Cached api response:", request.url);
+    }
+    return networkResponse;
+  } catch (error) {
+    console.error("Failed to fetch api:", error);
+
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      console.log("Serving api response from cache", request.url);
+      return cachedResponse;
+    }
+
+    return new Response("Offline: no cached data available", {
       status: 503,
     });
   }
